@@ -1,4 +1,5 @@
 import React from 'react';
+import Link from 'next/link';
 
 const DebugPage = () => {
     const apiUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
@@ -47,7 +48,7 @@ const DebugPage = () => {
             </div>
             
             <div style={{ marginTop: '20px' }}>
-                <a href="/" style={{ color: '#007bff', textDecoration: 'none' }}>← Back to Chatbot</a>
+                <Link href="/" style={{ color: '#007bff', textDecoration: 'none' }}>← Back to Chatbot</Link>
             </div>
         </div>
     );
