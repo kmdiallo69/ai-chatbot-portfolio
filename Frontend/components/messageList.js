@@ -76,16 +76,30 @@ const MessageList = () => {
         }
         
         try {
-            const formData = new FormData();
-            formData.append("prompt", userMessageText);
-            if (currentImageFile) {
-                formData.append("file", currentImageFile);
-            }
+            let response;
             
-            const response = await fetch(`${API_URL}/chat/image`, {
-                method: "POST",
-                body: formData,
-            });
+            if (currentImageFile) {
+                // For image requests, use FormData and /chat/image endpoint
+                const formData = new FormData();
+                formData.append("prompt", userMessageText);
+                formData.append("file", currentImageFile);
+                
+                response = await fetch(`${API_URL}/chat/image`, {
+                    method: "POST",
+                    body: formData,
+                });
+            } else {
+                // For text-only requests, use JSON and /chat endpoint
+                response = await fetch(`${API_URL}/chat`, {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                    },
+                    body: JSON.stringify({
+                        message: userMessageText
+                    }),
+                });
+            }
             
             if (!response.ok) {
                 const errorData = await response.json().catch(() => ({}));
