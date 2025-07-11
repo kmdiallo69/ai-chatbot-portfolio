@@ -8,8 +8,8 @@ echo "==============================="
 # Backend URL
 BACKEND_URL="https://chatbot-backend-1752247339.livelyplant-d44fb3c4.eastus.azurecontainerapps.io"
 
-# Frontend URL
-FRONTEND_URL="https://proud-moss-066b9b810.1.azurestaticapps.net"
+# Frontend URL (New Working URL)
+FRONTEND_URL="https://green-desert-097a9c00f.1.azurestaticapps.net"
 
 echo ""
 echo "1. Testing Backend Health..."
