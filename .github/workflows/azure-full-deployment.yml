@@ -37,6 +37,10 @@ jobs:
         with:
           creds: ${{ secrets.AZURE_CREDENTIALS }}
 
+      - name: Install jq for JSON parsing
+        run: |
+          sudo apt-get update && sudo apt-get install -y jq
+
       - name: Login to Azure Container Registry
         run: |
           az acr login --name ${{ env.ACR_NAME }}
@@ -182,25 +186,115 @@ jobs:
               ENVIRONMENT="production" \
               CORS_ORIGINS="$FRONTEND_URL"
 
-      - name: Verify Database Connection
+      - name: Test Database Access
         run: |
-          echo "Waiting for database to be ready..."
-          sleep 30
+          echo "🔍 Testing Database Access..."
+          echo "========================="
           
-          # Test database connection through backend health check
+          # Get database connection details
+          DATABASE_URL="${{ steps.get-database-url.outputs.database_url }}"
           BACKEND_URL="${{ steps.get-backend-url.outputs.backend_url }}"
           
-          # Wait for backend to be ready
-          echo "Testing backend health..."
-          for i in {1..10}; do
+          echo "Database URL: $DATABASE_URL"
+          echo "Backend URL: $BACKEND_URL"
+          
+          # Wait for services to be ready
+          echo "⏳ Waiting for services to initialize..."
+          sleep 45
+          
+          # Test backend health
+          echo "🔍 Testing backend health..."
+          for i in {1..15}; do
             if curl -f "$BACKEND_URL/health" &> /dev/null; then
               echo "✅ Backend health check passed"
               break
             else
-              echo "⏳ Waiting for backend to be ready... (attempt $i/10)"
+              echo "⏳ Waiting for backend to be ready... (attempt $i/15)"
+              sleep 10
+            fi
+          done
+          
+          # Test database health through backend
+          echo "🔍 Testing database connection through backend..."
+          for i in {1..10}; do
+            DB_STATUS=$(curl -s "$BACKEND_URL/health/db" | jq -r '.status // "unknown"')
+            if [ "$DB_STATUS" = "healthy" ]; then
+              echo "✅ Database connection test passed"
+              break
+            else
+              echo "⏳ Waiting for database connection... (attempt $i/10)"
+              echo "Database status: $DB_STATUS"
               sleep 15
             fi
           done
+          
+          # Test user registration endpoint (without creating user)
+          echo "🔍 Testing user registration endpoint..."
+          REG_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "$BACKEND_URL/auth/register" \
+            -H "Content-Type: application/json" \
+            -d '{}')
+          
+          if [ "$REG_STATUS" = "422" ]; then
+            echo "✅ Registration endpoint accessible (validation working)"
+          else
+            echo "⚠️  Registration endpoint status: $REG_STATUS"
+          fi
+          
+          # Test chat endpoint (should fail without auth)
+          echo "🔍 Testing chat endpoint authentication..."
+          CHAT_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X POST "$BACKEND_URL/chat" \
+            -H "Content-Type: application/json" \
+            -d '{"message": "test"}')
+          
+          if [ "$CHAT_STATUS" = "401" ]; then
+            echo "✅ Chat endpoint properly protected (authentication working)"
+          else
+            echo "⚠️  Chat endpoint status: $CHAT_STATUS"
+          fi
+
+      - name: Verify Frontend Deployment
+        run: |
+          echo "🔍 Verifying Frontend Deployment..."
+          echo "================================"
+          
+          FRONTEND_URL="https://lemon-plant-0d43ab50f.1.azurestaticapps.net"
+          BACKEND_URL="${{ steps.get-backend-url.outputs.backend_url }}"
+          
+          # Wait for frontend to be ready
+          echo "⏳ Waiting for frontend to be ready..."
+          sleep 30
+          
+          # Test frontend accessibility
+          echo "🔍 Testing frontend accessibility..."
+          for i in {1..10}; do
+            FRONTEND_STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$FRONTEND_URL")
+            if [ "$FRONTEND_STATUS" = "200" ]; then
+              echo "✅ Frontend is accessible"
+              break
+            else
+              echo "⏳ Waiting for frontend... (attempt $i/10) - Status: $FRONTEND_STATUS"
+              sleep 10
+            fi
+          done
+          
+          # Check if frontend can reach backend
+          echo "🔍 Testing frontend-backend connectivity..."
+          echo "Expected backend URL in frontend: $BACKEND_URL"
+          
+          # Test CORS configuration
+          echo "🔍 Testing CORS configuration..."
+          CORS_STATUS=$(curl -s -o /dev/null -w "%{http_code}" \
+            -X OPTIONS "$BACKEND_URL/health" \
+            -H "Origin: $FRONTEND_URL" \
+            -H "Access-Control-Request-Method: GET")
+          
+          if [ "$CORS_STATUS" = "200" ] || [ "$CORS_STATUS" = "204" ]; then
+            echo "✅ CORS configuration working"
+          else
+            echo "⚠️  CORS status: $CORS_STATUS"
+          fi
 
       - name: Display Deployment URLs
         run: |
@@ -213,6 +307,12 @@ jobs:
           echo "🏗️ Container Registry: ${{ env.ACR_NAME }}"
           echo ""
           echo "🔧 All components are now deployed and configured to communicate!"
+          echo ""
+          echo "📋 Quick Test Instructions:"
+          echo "1. Visit: https://lemon-plant-0d43ab50f.1.azurestaticapps.net"
+          echo "2. Register a new user account"
+          echo "3. Check email for verification link"
+          echo "4. Login and test the chat functionality"
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
