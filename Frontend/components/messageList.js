@@ -9,6 +9,7 @@ const MessageList = () => {
     const [imageFile, setImageFile] = useState(null);
     const [error, setError] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
+    const [showBuildInfo, setShowBuildInfo] = useState(false);
     
     // Refs for auto-scroll
     const chatBoxRef = useRef(null);
@@ -16,6 +17,7 @@ const MessageList = () => {
     
     // Configuration
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const BUILD_TIME = process.env.BUILD_TIME || 'Unknown';
     
     // Auto-scroll to bottom when new messages are added
     useEffect(() => {
@@ -86,7 +88,7 @@ const MessageList = () => {
                 
                 response = await fetch(`${API_URL}/chat/image`, {
                     method: "POST",
-                    body: formData,
+                    body: formData, 
                 });
             } else {
                 // For text-only requests, use JSON and /chat endpoint
@@ -188,14 +190,33 @@ const MessageList = () => {
         <div className={styles.container}>
             <div className={styles.headerContainer}>
                 <h1 className={styles.header}>AI Chatbot</h1>
-                <button 
-                    onClick={clearChat} 
-                    className={styles.clearButton}
-                    disabled={loading || chatHistory.length === 0}
-                >
-                    Clear Chat
-                </button>
+                <div className={styles.headerButtons}>
+                    <button 
+                        onClick={() => setShowBuildInfo(!showBuildInfo)}
+                        className={styles.infoButton}
+                        title="Build Information"
+                    >
+                        ℹ️
+                    </button>
+                    <button 
+                        onClick={clearChat} 
+                        className={styles.clearButton}
+                        disabled={loading || chatHistory.length === 0}
+                    >
+                        Clear Chat
+                    </button>
+                </div>
             </div>
+            
+            {showBuildInfo && (
+                <div className={styles.buildInfo}>
+                    <h4>Build Information</h4>
+                    <p><strong>API URL:</strong> {API_URL}</p>
+                    <p><strong>Build Time:</strong> {BUILD_TIME}</p>
+                    <p><strong>Version:</strong> 2025-01-11-v2</p>
+                    <p><strong>Deployment:</strong> Azure Static Web Apps</p>
+                </div>
+            )}
             
             {error && (
                 <div className={styles.errorMessage}>

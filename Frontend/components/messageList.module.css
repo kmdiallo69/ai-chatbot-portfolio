@@ -20,6 +20,12 @@
     margin-bottom: 20px;
 }
 
+.headerButtons {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
 .header {
     margin: 0;
     color: white;
@@ -45,6 +51,43 @@
 .clearButton:disabled {
     opacity: 0.5;
     cursor: not-allowed;
+}
+
+.infoButton {
+    padding: 8px 12px;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.infoButton:hover {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+.buildInfo {
+    width: 90%;
+    max-width: 1200px;
+    margin-bottom: 15px;
+    padding: 15px;
+    background-color: rgba(255, 255, 255, 0.9);
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    font-size: 14px;
+    color: #333;
+}
+
+.buildInfo h4 {
+    margin: 0 0 10px 0;
+    color: #667eea;
+}
+
+.buildInfo p {
+    margin: 5px 0;
+    font-family: monospace;
 }
 
 .errorMessage {
@@ -389,4 +432,7 @@
 
 .chatBox::-webkit-scrollbar-thumb:hover {
     background: #999;
-}/* Force rebuild - Fri Jul 11 12:28:31 EDT 2025 */
+}
+
+/* Force rebuild - Updated deployment configuration */
+/* Build timestamp: 2025-01-11T17:30:00Z */
