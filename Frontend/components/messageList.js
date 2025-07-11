@@ -2,6 +2,7 @@ import styles from "./messageList.module.css";
 import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useRouter } from 'next/router';
 
 const MessageList = () => {
     // State management
@@ -12,15 +13,24 @@ const MessageList = () => {
     const [error, setError] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
     const [showBuildInfo, setShowBuildInfo] = useState(false);
+    const [isAuthenticated, setIsAuthenticated] = useState(false);
+    const [user, setUser] = useState(null);
+    const [authLoading, setAuthLoading] = useState(true);
     
     // Refs for auto-scroll
     const chatBoxRef = useRef(null);
     const fileInputRef = useRef(null);
+    const router = useRouter();
     
     // Configuration
     const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend-1752261683.purplesmoke-82a64915.eastus.azurecontainerapps.io';
     const BUILD_TIME = process.env.BUILD_TIME || 'Unknown';
     
+    // Check authentication on component mount
+    useEffect(() => {
+        checkAuth();
+    }, []); // checkAuth is defined inside component, this is acceptable
+
     // Auto-scroll to bottom when new messages are added
     useEffect(() => {
         if (chatBoxRef.current) {
@@ -35,6 +45,54 @@ const MessageList = () => {
             return () => clearTimeout(timer);
         }
     }, [error]);
+
+    // Authentication functions
+    const checkAuth = async () => {
+        const token = localStorage.getItem('access_token');
+        if (!token) {
+            setAuthLoading(false);
+            router.push('/auth/login');
+            return;
+        }
+
+        try {
+            const response = await fetch(`${API_URL}/auth/me`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (response.ok) {
+                const userData = await response.json();
+                setUser(userData);
+                setIsAuthenticated(true);
+            } else {
+                localStorage.removeItem('access_token');
+                localStorage.removeItem('token_type');
+                router.push('/auth/login');
+            }
+        } catch (error) {
+            console.error('Auth check failed:', error);
+            localStorage.removeItem('access_token');
+            localStorage.removeItem('token_type');
+            router.push('/auth/login');
+        } finally {
+            setAuthLoading(false);
+        }
+    };
+
+    const logout = () => {
+        localStorage.removeItem('access_token');
+        localStorage.removeItem('token_type');
+        setIsAuthenticated(false);
+        setUser(null);
+        router.push('/auth/login');
+    };
+
+    const getAuthHeaders = () => {
+        const token = localStorage.getItem('access_token');
+        return token ? { 'Authorization': `Bearer ${token}` } : {};
+    };
     
     const sendMessage = async () => {
         if (!userMessage.trim() && !imageFile) {
@@ -90,6 +148,9 @@ const MessageList = () => {
                 
                 response = await fetch(`${API_URL}/chat/image`, {
                     method: "POST",
+                    headers: {
+                        ...getAuthHeaders()
+                    },
                     body: formData, 
                 });
             } else {
@@ -98,6 +159,7 @@ const MessageList = () => {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
+                        ...getAuthHeaders()
                     },
                     body: JSON.stringify({
                         message: userMessageText
@@ -106,6 +168,11 @@ const MessageList = () => {
             }
             
             if (!response.ok) {
+                if (response.status === 401) {
+                    // Token expired or invalid
+                    logout();
+                    return;
+                }
                 const errorData = await response.json().catch(() => ({}));
                 throw new Error(errorData.detail || `Server error: ${response.status}`);
             }
@@ -187,12 +254,32 @@ const MessageList = () => {
         setChatHistory([]);
         setError(null);
     };
+
+    // Show loading screen while checking authentication
+    if (authLoading) {
+        return (
+            <div className={styles.container}>
+                <div className={styles.loadingContainer}>
+                    <div className={styles.spinner}></div>
+                    <span>Loading...</span>
+                </div>
+            </div>
+        );
+    }
+
+    // Redirect to login if not authenticated
+    if (!isAuthenticated) {
+        return null;
+    }
     
     return (
         <div className={styles.container}>
             <div className={styles.headerContainer}>
                 <h1 className={styles.header}>AI Chatbot</h1>
                 <div className={styles.headerButtons}>
+                    <span className={styles.userInfo}>
+                        Welcome, {user?.username}!
+                    </span>
                     <button 
                         onClick={() => setShowBuildInfo(!showBuildInfo)}
                         className={styles.infoButton}
@@ -207,6 +294,13 @@ const MessageList = () => {
                     >
                         Clear Chat
                     </button>
+                    <button 
+                        onClick={logout} 
+                        className={styles.logoutButton}
+                        title="Logout"
+                    >
+                        Logout
+                    </button>
                 </div>
             </div>
             
@@ -215,7 +309,7 @@ const MessageList = () => {
                     <h4>Build Information</h4>
                     <p><strong>API URL:</strong> {API_URL}</p>
                     <p><strong>Build Time:</strong> {BUILD_TIME}</p>
-                    <p><strong>Version:</strong> 2025-01-11-v5-markdown-support</p>
+                    <p><strong>Version:</strong> 2025-01-11-v6-auth-system</p>
                     <p><strong>Deployment:</strong> Azure Static Web Apps</p>
                 </div>
             )}

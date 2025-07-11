@@ -1,13 +1,22 @@
 import os
 import logging
-from datetime import datetime
+from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from openai import OpenAI
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
 import base64
 from typing import Optional
+
+# Import authentication modules
+from auth import (
+    User, UserRegister, UserLogin, UserResponse, Token,
+    get_db, create_user, authenticate_user, create_access_token,
+    verify_user_email, get_current_verified_user, get_current_user,
+    ACCESS_TOKEN_EXPIRE_MINUTES
+)
+from sqlalchemy.orm import Session
 
 # Configure logging
 logging.basicConfig(
@@ -33,8 +42,8 @@ client = OpenAI(api_key=OPENAI_API_KEY)
 # Initialize FastAPI app
 app = FastAPI(
     title="AI Chatbot API",
-    description="An AI chatbot with text and image capabilities",
-    version="1.0.0"
+    description="An AI chatbot with text and image capabilities and user authentication",
+    version="2.0.0"
 )
 
 # Add CORS middleware with proper configuration
@@ -65,27 +74,96 @@ class HealthResponse(BaseModel):
     status: str
     version: str
 
+# Authentication endpoints
+@app.post("/auth/register", response_model=dict)
+async def register(user_data: UserRegister, db: Session = Depends(get_db)):
+    """Register a new user"""
+    try:
+        user = create_user(db, user_data)
+        return {
+            "message": "User registered successfully. Please check your email to verify your account.",
+            "user_id": user.id,
+            "username": user.username
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Registration error: {e}")
+        raise HTTPException(status_code=500, detail="Registration failed")
+
+@app.post("/auth/login", response_model=Token)
+async def login(user_data: UserLogin, db: Session = Depends(get_db)):
+    """Login user and return access token"""
+    try:
+        user = authenticate_user(db, user_data.username, user_data.password)
+        if not user:
+            raise HTTPException(
+                status_code=401,
+                detail="Incorrect username or password"
+            )
+        
+        if not user.is_verified:
+            raise HTTPException(
+                status_code=401,
+                detail="Please verify your email before logging in"
+            )
+        
+        access_token_expires = timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+        access_token = create_access_token(
+            data={"sub": user.username}, expires_delta=access_token_expires
+        )
+        
+        return {"access_token": access_token, "token_type": "bearer"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Login error: {e}")
+        raise HTTPException(status_code=500, detail="Login failed")
+
+@app.post("/auth/verify-email")
+async def verify_email(verification_token: str, db: Session = Depends(get_db)):
+    """Verify user email with token"""
+    try:
+        user = verify_user_email(db, verification_token)
+        return {
+            "message": "Email verified successfully. You can now log in.",
+            "username": user.username
+        }
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error(f"Email verification error: {e}")
+        raise HTTPException(status_code=500, detail="Email verification failed")
+
+@app.get("/auth/me", response_model=UserResponse)
+async def get_current_user_info(current_user: User = Depends(get_current_user)):
+    """Get current user information"""
+    return current_user
+
 # Health check endpoint
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint for monitoring"""
-    return HealthResponse(status="healthy", version="1.0.0")
+    return HealthResponse(status="healthy", version="2.0.0")
 
-# Main chat endpoint
+# Protected chat endpoints
 @app.post("/chat", response_model=ChatResponse)
-async def chat_with_ai(chat_request: ChatRequest):
+async def chat_with_ai(
+    chat_request: ChatRequest,
+    current_user: User = Depends(get_current_verified_user)
+):
     """
-    Endpoint to receive a text prompt and return AI response
+    Endpoint to receive a text prompt and return AI response (requires authentication)
     """
     try:
-        logger.info(f"Received chat request: {chat_request.message[:50]}...")
+        logger.info(f"User {current_user.username} sent chat request: {chat_request.message[:50]}...")
         
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
             messages=[
                 {
                     "role": "system",
-                    "content": "You are a helpful and knowledgeable assistant. Provide accurate, concise, and helpful responses."
+                    "content": "You are a helpful and knowledgeable assistant. Provide accurate, concise, and helpful responses using markdown formatting when appropriate."
                 },
                 {
                     "role": "user",
@@ -98,7 +176,7 @@ async def chat_with_ai(chat_request: ChatRequest):
         
         response_content = completion.choices[0].message.content or "I apologize, but I couldn't generate a response."
         
-        logger.info("Successfully generated AI response")
+        logger.info(f"Successfully generated AI response for user {current_user.username}")
         
         return ChatResponse(
             response=response_content,
@@ -107,23 +185,23 @@ async def chat_with_ai(chat_request: ChatRequest):
         )
         
     except Exception as e:
-        logger.error(f"Error in chat endpoint: {str(e)}")
+        logger.error(f"Error in chat endpoint for user {current_user.username}: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail="Sorry, I'm having trouble processing your request. Please try again."
         )
 
-# File upload endpoint with enhanced validation
 @app.post("/chat/image", response_model=ChatResponse)
 async def chat_with_image(
     prompt: str = Form(..., min_length=1, max_length=2000),
-    file: Optional[UploadFile] = File(None)
+    file: Optional[UploadFile] = File(None),
+    current_user: User = Depends(get_current_verified_user)
 ):
     """
-    Endpoint to process text with optional image upload
+    Endpoint to process text with optional image upload (requires authentication)
     """
     try:
-        logger.info(f"Received image chat request: {prompt[:50]}...")
+        logger.info(f"User {current_user.username} sent image chat request: {prompt[:50]}...")
         
         # Validate file if provided
         if file:
@@ -176,7 +254,7 @@ async def chat_with_image(
                 messages=[
                     {
                         "role": "system",
-                        "content": "You are a helpful and knowledgeable assistant. Provide accurate, concise, and helpful responses."
+                        "content": "You are a helpful and knowledgeable assistant. Provide accurate, concise, and helpful responses using markdown formatting when appropriate."
                     },
                     {
                         "role": "user",
@@ -191,7 +269,7 @@ async def chat_with_image(
         
         response_content = completion.choices[0].message.content or "I apologize, but I couldn't generate a response."
         
-        logger.info("Successfully generated AI response with image")
+        logger.info(f"Successfully generated AI response with image for user {current_user.username}")
         
         return ChatResponse(
             response=response_content,
@@ -202,23 +280,27 @@ async def chat_with_image(
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error in image chat endpoint: {str(e)}")
+        logger.error(f"Error in image chat endpoint for user {current_user.username}: {str(e)}")
         raise HTTPException(
             status_code=500,
             detail="Sorry, I'm having trouble processing your request. Please try again."
         )
 
-# Legacy endpoint for backward compatibility
+# Legacy endpoint for backward compatibility (now protected)
 @app.post("/", response_model=ChatResponse)
-async def legacy_chat(chat_request: ChatRequest):
-    """Legacy endpoint for backward compatibility"""
-    return await chat_with_ai(chat_request)
+async def legacy_chat(
+    chat_request: ChatRequest,
+    current_user: User = Depends(get_current_verified_user)
+):
+    """Legacy endpoint for backward compatibility (now protected)"""
+    return await chat_with_ai(chat_request, current_user)
 
-# Legacy upload endpoint for backward compatibility
+# Legacy upload endpoint for backward compatibility (now protected)
 @app.post("/uploadfile/", response_model=ChatResponse)
 async def legacy_upload(
     prompt: str = Form(...),
-    file: Optional[UploadFile] = File(None)
+    file: Optional[UploadFile] = File(None),
+    current_user: User = Depends(get_current_verified_user)
 ):
-    """Legacy upload endpoint for backward compatibility"""
-    return await chat_with_image(prompt, file)
+    """Legacy upload endpoint for backward compatibility (now protected)"""
+    return await chat_with_image(prompt, file, current_user)

@@ -26,6 +26,13 @@
     align-items: center;
 }
 
+.userInfo {
+    color: white;
+    font-size: 14px;
+    font-weight: 500;
+    margin-right: 10px;
+}
+
 .header {
     margin: 0;
     color: white;
@@ -66,6 +73,22 @@
 
 .infoButton:hover {
     background-color: rgba(255, 255, 255, 0.3);
+}
+
+.logoutButton {
+    padding: 8px 16px;
+    background-color: rgba(255, 255, 255, 0.2);
+    color: white;
+    border: 1px solid rgba(255, 255, 255, 0.3);
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 14px;
+    transition: all 0.3s ease;
+}
+
+.logoutButton:hover {
+    background-color: rgba(255, 87, 87, 0.8);
+    border-color: rgba(255, 87, 87, 0.8);
 }
 
 .buildInfo {
