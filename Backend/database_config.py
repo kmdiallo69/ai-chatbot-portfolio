@@ -1,32 +1,42 @@
 import os
-from sqlalchemy import create_engine
+from sqlalchemy import create_engine, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 # Database configuration
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://postgres:password@localhost:5432/chatbot")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./chatbot.db")
 
-# For development with Docker
+# For development with Docker (PostgreSQL)
 DEV_DATABASE_URL = "postgresql://postgres:password@localhost:5432/chatbot"
 
-# For production (will be set via environment variables)
-PROD_DATABASE_URL = os.getenv("DATABASE_URL")
+# For production - use SQLite by default, PostgreSQL if DATABASE_URL is set
+PROD_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite:///./chatbot.db")
 
 # Use appropriate URL based on environment
 if os.getenv("ENVIRONMENT") == "production":
-    DB_URL = PROD_DATABASE_URL or DATABASE_URL
+    DB_URL = PROD_DATABASE_URL
 else:
-    DB_URL = DEV_DATABASE_URL
+    # Use PostgreSQL for local development if available, SQLite as fallback
+    DB_URL = DEV_DATABASE_URL if os.getenv("USE_POSTGRES") else "sqlite:///./chatbot.db"
 
-# Create engine
-engine = create_engine(
-    DB_URL,
-    echo=os.getenv("DEBUG", "False").lower() == "true",  # Log SQL queries in debug mode
-    future=True,
-    pool_pre_ping=True,  # Enable connection health checks
-    pool_recycle=3600,   # Recycle connections after 1 hour
-)
+# Create engine with appropriate settings for SQLite vs PostgreSQL
+if DB_URL.startswith("sqlite:"):
+    engine = create_engine(
+        DB_URL,
+        echo=os.getenv("DEBUG", "False").lower() == "true",
+        future=True,
+        connect_args={"check_same_thread": False},  # SQLite specific
+        poolclass=StaticPool,
+    )
+else:
+    engine = create_engine(
+        DB_URL,
+        echo=os.getenv("DEBUG", "False").lower() == "true",
+        future=True,
+        pool_pre_ping=True,  # Enable connection health checks
+        pool_recycle=3600,   # Recycle connections after 1 hour
+    )
 
 # Create SessionLocal class
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -47,7 +57,7 @@ def check_database_connection():
     """Check if database connection is healthy"""
     try:
         with engine.connect() as conn:
-            conn.execute("SELECT 1")
+            conn.execute(text("SELECT 1"))
         return True
     except Exception as e:
         print(f"Database connection failed: {e}")

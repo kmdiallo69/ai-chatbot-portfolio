@@ -1,0 +1,21 @@
+# Docker compose files
+docker-compose.yml
+docker-compose.override.yml
+
+# Documentation
+README.md
+
+# Scripts
+start-database.sh
+
+# Git
+.git
+.gitignore
+
+# IDE
+.vscode
+.idea
+
+# OS
+.DS_Store
+Thumbs.db 

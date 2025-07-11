@@ -3,20 +3,22 @@ import logging
 from datetime import datetime, timedelta
 from dotenv import load_dotenv
 from openai import OpenAI
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request, Depends
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request, Depends, status
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel, Field, validator
 import base64
-from typing import Optional
+from typing import Optional, List, Dict, Any
 
 # Import authentication modules
 from auth import (
     User, UserRegister, UserLogin, UserResponse, Token,
     get_db, create_user, authenticate_user, create_access_token,
     verify_user_email, get_current_verified_user, get_current_user,
-    ACCESS_TOKEN_EXPIRE_MINUTES
+    ACCESS_TOKEN_EXPIRE_MINUTES, get_password_hash, verify_password
 )
 from sqlalchemy.orm import Session
+from sqlalchemy import text
 
 # Configure logging
 logging.basicConfig(
@@ -54,6 +56,8 @@ app.add_middleware(
     allow_methods=["GET", "POST"],
     allow_headers=["*"],
 )
+
+# Authentication routes are handled directly in this file
 
 # Pydantic models
 class ChatRequest(BaseModel):
@@ -304,3 +308,83 @@ async def legacy_upload(
 ):
     """Legacy upload endpoint for backward compatibility (now protected)"""
     return await chat_with_image(prompt, file, current_user)
+
+# Database health check endpoint
+@app.get("/health/db")
+async def db_health_check(db: Session = Depends(get_db)):
+    """Health check endpoint to verify database connectivity"""
+    try:
+        # Simple database connection test
+        result = db.execute(text("SELECT 1")).scalar()
+        
+        if result == 1:
+            return {"status": "healthy", "message": "Database connection successful"}
+        else:
+            return JSONResponse(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                content={
+                    "status": "unhealthy",
+                    "message": "Database connection failed"
+                }
+            )
+    except Exception as e:
+        logger.error(f"Database health check failed: {e}")
+        return JSONResponse(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            content={
+                "status": "unhealthy",
+                "timestamp": datetime.now().isoformat(),
+                "error": str(e)
+            }
+        )
+
+# Initialize database on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on startup"""
+    try:
+        logger.info("Starting up application...")
+        logger.info(f"Database URL: {os.getenv('DATABASE_URL', 'Not set')}")
+        
+        # Create database tables
+        # Assuming create_tables function exists in database_config.py
+        # from database_config import create_tables
+        # create_tables()
+        logger.info("Database tables check/creation logic commented out as per new_code.py")
+        
+        # Check database connection
+        # Assuming check_database_connection function exists in database_config.py
+        # from database_config import check_database_connection
+        # if check_database_connection():
+        #     logger.info("Database connection successful")
+        # else:
+        #     logger.error("Database connection failed")
+            
+    except Exception as e:
+        logger.error(f"Startup error: {e}")
+        raise
+
+# Error handlers
+@app.exception_handler(HTTPException)
+async def http_exception_handler(request: Request, exc: HTTPException):
+    """Custom HTTP exception handler"""
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"detail": exc.detail, "timestamp": datetime.now().isoformat()}
+    )
+
+@app.exception_handler(Exception)
+async def general_exception_handler(request: Request, exc: Exception):
+    """General exception handler"""
+    logger.error(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            "detail": "Internal server error",
+            "timestamp": datetime.now().isoformat()
+        }
+    )
+
+if __name__ == "__main__":
+    import uvicorn
+    uvicorn.run(app, host="0.0.0.0", port=8000)

@@ -11,9 +11,38 @@ We use **PostgreSQL** as the primary database for this application, which provid
 - Better concurrent access handling
 - Production-ready reliability
 
-## Quick Start
+## Deployment Options
 
-### 1. Using Docker (Recommended)
+### Option 1: Azure Container Apps (Production)
+
+For production deployment on Azure, we provide a containerized PostgreSQL instance:
+
+```bash
+# Build and push database image to Azure Container Registry
+cd database
+./build-and-push.sh
+
+# Deploy to Azure Container Apps
+./deploy-database.sh
+```
+
+**Container Details:**
+- **Image**: `chatbotacr1752261237.azurecr.io/chatbot-postgres:latest`
+- **Registry**: Azure Container Registry
+- **Deployment**: Azure Container Apps
+- **Resources**: 1 CPU, 2GB RAM
+- **Includes**: Custom initialization script with schema and indexes
+
+**Connection for Azure:**
+- Use the FQDN returned by the deployment script
+- Port: 5432
+- Database: chatbot
+- Username: postgres
+- Password: password (update for production)
+
+### Option 2: Local Development
+
+#### Using Docker (Recommended)
 
 ```bash
 # Start PostgreSQL and pgAdmin
@@ -24,7 +53,7 @@ docker-compose up -d
 docker-compose ps
 ```
 
-### 2. Manual PostgreSQL Installation
+#### Manual PostgreSQL Installation
 
 If you prefer to install PostgreSQL manually:
 
@@ -42,7 +71,7 @@ sudo systemctl enable postgresql
 # Download and install from https://www.postgresql.org/download/windows/
 ```
 
-### 3. Database Configuration
+## Database Configuration
 
 The application uses the following default connection settings:
 
@@ -54,7 +83,7 @@ Username: postgres
 Password: password
 ```
 
-### 4. Environment Variables
+## Environment Variables
 
 Set these environment variables for production:
 

@@ -1,0 +1,226 @@
+name: Azure Full Stack Deployment
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - main
+  workflow_dispatch:
+
+env:
+  AZURE_RESOURCE_GROUP: "1-1b154f73-playground-sandbox"
+  AZURE_LOCATION: "eastus"
+  ACR_NAME: "chatbotacr1752261237"
+  CONTAINER_ENV_NAME: "chatbot-env"
+  DATABASE_APP_NAME: "chatbot-database"
+  BACKEND_APP_NAME: "chatbot-backend"
+  FRONTEND_APP_NAME: "chatbot-frontend"
+
+jobs:
+  build-and-deploy:
+    if: github.event_name == 'push' || (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Build and Deploy Full Stack
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          submodules: true
+          lfs: false
+
+      - name: Login to Azure
+        uses: azure/login@v1
+        with:
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
+
+      - name: Login to Azure Container Registry
+        run: |
+          az acr login --name ${{ env.ACR_NAME }}
+
+      - name: Check Container Apps Environment
+        run: |
+          if ! az containerapp env show --name ${{ env.CONTAINER_ENV_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} &> /dev/null; then
+            echo "Creating Container Apps environment..."
+            az containerapp env create \
+              --name ${{ env.CONTAINER_ENV_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --location ${{ env.AZURE_LOCATION }}
+          else
+            echo "Container Apps environment already exists"
+          fi
+
+      - name: Build and Push Database Image
+        run: |
+          cd database
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/chatbot-postgres:latest .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/chatbot-postgres:latest
+          echo "Database image pushed successfully"
+
+      - name: Deploy Database Container App
+        run: |
+          # Check if database container app exists
+          if az containerapp show --name ${{ env.DATABASE_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} &> /dev/null; then
+            echo "Updating existing database container app..."
+            az containerapp update \
+              --name ${{ env.DATABASE_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --image ${{ env.ACR_NAME }}.azurecr.io/chatbot-postgres:latest
+          else
+            echo "Creating new database container app..."
+            az containerapp create \
+              --name ${{ env.DATABASE_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --environment ${{ env.CONTAINER_ENV_NAME }} \
+              --image ${{ env.ACR_NAME }}.azurecr.io/chatbot-postgres:latest \
+              --target-port 5432 \
+              --ingress external \
+              --registry-server ${{ env.ACR_NAME }}.azurecr.io \
+              --cpu 1 \
+              --memory 2Gi \
+              --min-replicas 1 \
+              --max-replicas 1 \
+              --env-vars \
+                POSTGRES_DB=chatbot \
+                POSTGRES_USER=postgres \
+                POSTGRES_PASSWORD=password \
+                POSTGRES_HOST_AUTH_METHOD=trust
+          fi
+
+      - name: Get Database URL
+        id: get-database-url
+        run: |
+          DATABASE_FQDN=$(az containerapp show \
+            --name ${{ env.DATABASE_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query "properties.configuration.ingress.fqdn" \
+            --output tsv)
+          DATABASE_URL="postgresql://postgres:password@${DATABASE_FQDN}:5432/chatbot"
+          echo "database_url=$DATABASE_URL" >> $GITHUB_OUTPUT
+          echo "Database URL: $DATABASE_URL"
+
+      - name: Build and Push Backend Image
+        run: |
+          cd Backend
+          docker build -t ${{ env.ACR_NAME }}.azurecr.io/chatbot-backend:latest -f Dockerfile.azure .
+          docker push ${{ env.ACR_NAME }}.azurecr.io/chatbot-backend:latest
+          echo "Backend image pushed successfully"
+
+      - name: Deploy Backend Container App
+        run: |
+          # Check if backend container app exists
+          if az containerapp show --name ${{ env.BACKEND_APP_NAME }} --resource-group ${{ env.AZURE_RESOURCE_GROUP }} &> /dev/null; then
+            echo "Updating existing backend container app..."
+            az containerapp update \
+              --name ${{ env.BACKEND_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --image ${{ env.ACR_NAME }}.azurecr.io/chatbot-backend:latest \
+              --set-env-vars \
+                OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+                DATABASE_URL="${{ steps.get-database-url.outputs.database_url }}" \
+                ENVIRONMENT="production"
+          else
+            echo "Creating new backend container app..."
+            az containerapp create \
+              --name ${{ env.BACKEND_APP_NAME }} \
+              --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+              --environment ${{ env.CONTAINER_ENV_NAME }} \
+              --image ${{ env.ACR_NAME }}.azurecr.io/chatbot-backend:latest \
+              --target-port 8000 \
+              --ingress external \
+              --registry-server ${{ env.ACR_NAME }}.azurecr.io \
+              --min-replicas 1 \
+              --max-replicas 3 \
+              --cpu 0.5 \
+              --memory 1Gi \
+              --env-vars \
+                OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+                DATABASE_URL="${{ steps.get-database-url.outputs.database_url }}" \
+                ENVIRONMENT="production"
+          fi
+
+      - name: Get Backend URL
+        id: get-backend-url
+        run: |
+          BACKEND_FQDN=$(az containerapp show \
+            --name ${{ env.BACKEND_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --query "properties.configuration.ingress.fqdn" \
+            --output tsv)
+          BACKEND_URL="https://$BACKEND_FQDN"
+          echo "backend_url=$BACKEND_URL" >> $GITHUB_OUTPUT
+          echo "Backend URL: $BACKEND_URL"
+
+      - name: Deploy Frontend to Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_PLANT_0D43AB50F }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "Frontend"
+          api_location: ""
+          output_location: ""
+        env:
+          NEXT_PUBLIC_API_URL: ${{ steps.get-backend-url.outputs.backend_url }}
+
+      - name: Update Backend CORS Settings
+        run: |
+          # Get frontend URL
+          FRONTEND_URL="https://lemon-plant-0d43ab50f.1.azurestaticapps.net"
+          
+          # Update backend CORS settings
+          echo "Updating backend CORS settings for frontend: $FRONTEND_URL"
+          az containerapp update \
+            --name ${{ env.BACKEND_APP_NAME }} \
+            --resource-group ${{ env.AZURE_RESOURCE_GROUP }} \
+            --set-env-vars \
+              OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+              DATABASE_URL="${{ steps.get-database-url.outputs.database_url }}" \
+              ENVIRONMENT="production" \
+              CORS_ORIGINS="$FRONTEND_URL"
+
+      - name: Verify Database Connection
+        run: |
+          echo "Waiting for database to be ready..."
+          sleep 30
+          
+          # Test database connection through backend health check
+          BACKEND_URL="${{ steps.get-backend-url.outputs.backend_url }}"
+          
+          # Wait for backend to be ready
+          echo "Testing backend health..."
+          for i in {1..10}; do
+            if curl -f "$BACKEND_URL/health" &> /dev/null; then
+              echo "✅ Backend health check passed"
+              break
+            else
+              echo "⏳ Waiting for backend to be ready... (attempt $i/10)"
+              sleep 15
+            fi
+          done
+
+      - name: Display Deployment URLs
+        run: |
+          echo "🎉 Deployment Complete!"
+          echo "========================="
+          echo "🌐 Frontend URL: https://lemon-plant-0d43ab50f.1.azurestaticapps.net"
+          echo "⚙️ Backend URL: ${{ steps.get-backend-url.outputs.backend_url }}"
+          echo "🗄️ Database URL: ${{ steps.get-database-url.outputs.database_url }}"
+          echo "📊 Resource Group: ${{ env.AZURE_RESOURCE_GROUP }}"
+          echo "🏗️ Container Registry: ${{ env.ACR_NAME }}"
+          echo ""
+          echo "🔧 All components are now deployed and configured to communicate!"
+
+  close_pull_request_job:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Close Pull Request Job
+    steps:
+      - name: Close Pull Request
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_PLANT_0D43AB50F }}
+          action: "close" 
