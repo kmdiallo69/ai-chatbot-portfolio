@@ -3,8 +3,8 @@
 ## ✅ Updated Configuration for Full-Stack Deployment
 
 ### **Frontend URL (Working)**
-- **URL**: `https://proud-moss-066b9b810.1.azurestaticapps.net`
-- **Azure Static Web Apps Token**: `AZURE_STATIC_WEB_APPS_API_TOKEN_PROUD_MOSS_066B9B810`
+- **URL**: `https://lemon-plant-0d43ab50f.1.azurestaticapps.net`
+- **Azure Static Web Apps Token**: `AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_PLANT_0D43AB50F`
 
 ### **Backend URL (Dynamic)**
 - **App Name**: `chatbot-backend`
@@ -34,7 +34,7 @@
 ### **Required GitHub Secrets**:
 - `AZURE_CREDENTIALS` - Azure Service Principal
 - `OPENAI_API_KEY` - OpenAI API Key
-- `AZURE_STATIC_WEB_APPS_API_TOKEN_PROUD_MOSS_066B9B810` - Azure Static Web Apps token
+- `AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_PLANT_0D43AB50F` - Azure Static Web Apps token
 
 ## 🔧 Configuration Details
 
@@ -117,7 +117,7 @@ az containerapp logs show --name chatbot-database --resource-group 1-1b154f73-pl
 
 ```mermaid
 graph TD
-    A[Frontend: proud-moss-066b9b810.1.azurestaticapps.net] --> B[Backend: chatbot-backend Container App]
+    A[Frontend: lemon-plant-0d43ab50f.1.azurestaticapps.net] --> B[Backend: chatbot-backend Container App]
     B --> C[Database: chatbot-database Container App]
     B --> D[OpenAI API]
     
