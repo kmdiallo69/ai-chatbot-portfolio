@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  output: 'export',
   trailingSlash: true,
   images: {
     unoptimized: true,
@@ -15,16 +14,7 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     BUILD_TIME: new Date().toISOString(),
   },
-  // Configure export path mapping
-  exportPathMap: async function (
-    defaultPathMap,
-    { dev, dir, outDir, distDir, buildId }
-  ) {
-    return {
-      '/': { page: '/' },
-    };
-  },
-  // Disable server-side features for static export
+  // Disable server-side features for static hosting
   poweredByHeader: false,
   compress: true,
 };
