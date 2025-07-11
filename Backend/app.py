@@ -48,12 +48,12 @@ app.add_middleware(
 
 # Pydantic models
 class ChatRequest(BaseModel):
-    prompt: str = Field(..., min_length=1, max_length=2000, description="User's message")
+    message: str = Field(..., min_length=1, max_length=2000, description="User's message")
     
-    @validator('prompt')
-    def validate_prompt(cls, v):
+    @validator('message')
+    def validate_message(cls, v):
         if not v.strip():
-            raise ValueError('Prompt cannot be empty')
+            raise ValueError('Message cannot be empty')
         return v.strip()
 
 class ChatResponse(BaseModel):
@@ -78,7 +78,7 @@ async def chat_with_ai(chat_request: ChatRequest):
     Endpoint to receive a text prompt and return AI response
     """
     try:
-        logger.info(f"Received chat request: {chat_request.prompt[:50]}...")
+        logger.info(f"Received chat request: {chat_request.message[:50]}...")
         
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -89,7 +89,7 @@ async def chat_with_ai(chat_request: ChatRequest):
                 },
                 {
                     "role": "user",
-                    "content": chat_request.prompt
+                    "content": chat_request.message
                 }
             ],
             max_tokens=1000,
