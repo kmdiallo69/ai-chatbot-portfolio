@@ -213,7 +213,7 @@ const MessageList = () => {
                     <h4>Build Information</h4>
                     <p><strong>API URL:</strong> {API_URL}</p>
                     <p><strong>Build Time:</strong> {BUILD_TIME}</p>
-                    <p><strong>Version:</strong> 2025-01-11-v2</p>
+                    <p><strong>Version:</strong> 2025-01-11-v3</p>
                     <p><strong>Deployment:</strong> Azure Static Web Apps</p>
                 </div>
             )}
