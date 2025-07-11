@@ -106,7 +106,7 @@ async def login(user_data: UserLogin, db: Session = Depends(get_db)):
                 detail="Incorrect username or password"
             )
         
-        if not user.is_verified:
+        if not bool(user.is_verified):
             raise HTTPException(
                 status_code=401,
                 detail="Please verify your email before logging in"

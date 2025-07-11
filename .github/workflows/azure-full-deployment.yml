@@ -157,7 +157,7 @@ jobs:
       - name: Deploy Frontend to Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_PLANT_0D43AB50F }}
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_GREEN_DESERT_097A9C00F }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "Frontend"
@@ -169,7 +169,7 @@ jobs:
       - name: Update Backend CORS Settings
         run: |
           # Get frontend URL
-          FRONTEND_URL="https://lemon-plant-0d43ab50f.1.azurestaticapps.net"
+          FRONTEND_URL="https://green-desert-097a9c00f.1.azurestaticapps.net"
           
           # Update backend CORS settings
           echo "Updating backend CORS settings for frontend: $FRONTEND_URL"
@@ -206,7 +206,7 @@ jobs:
         run: |
           echo "🎉 Deployment Complete!"
           echo "========================="
-          echo "🌐 Frontend URL: https://lemon-plant-0d43ab50f.1.azurestaticapps.net"
+          echo "🌐 Frontend URL: https://green-desert-097a9c00f.1.azurestaticapps.net"
           echo "⚙️ Backend URL: ${{ steps.get-backend-url.outputs.backend_url }}"
           echo "🗄️ Database URL: ${{ steps.get-database-url.outputs.database_url }}"
           echo "📊 Resource Group: ${{ env.AZURE_RESOURCE_GROUP }}"
@@ -222,5 +222,5 @@ jobs:
       - name: Close Pull Request
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_PLANT_0D43AB50F }}
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_GREEN_DESERT_097A9C00F }}
           action: "close" 
