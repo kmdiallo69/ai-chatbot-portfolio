@@ -32,19 +32,28 @@ docker-compose up -d
 echo "⏳ Waiting for PostgreSQL to be ready..."
 sleep 10
 
-# Check if PostgreSQL is running
-if docker-compose ps | grep -q "postgres.*Up"; then
-    echo "✅ PostgreSQL is running successfully!"
-    echo "   - Host: localhost"
-    echo "   - Port: 5432"
-    echo "   - Database: chatbot"
-    echo "   - Username: postgres"
-    echo "   - Password: password"
-else
-    echo "❌ Failed to start PostgreSQL. Check Docker logs:"
-    docker-compose logs postgres
-    exit 1
-fi
+# Check if PostgreSQL is running and healthy
+echo "🔍 Checking PostgreSQL health..."
+for i in {1..10}; do
+    if docker-compose exec -T postgres pg_isready -U postgres >/dev/null 2>&1; then
+        echo "✅ PostgreSQL is running successfully!"
+        echo "   - Host: localhost"
+        echo "   - Port: 5432"
+        echo "   - Database: chatbot"
+        echo "   - Username: postgres"
+        echo "   - Password: password"
+        break
+    else
+        echo "   Attempt $i/10: PostgreSQL not ready yet..."
+        sleep 2
+    fi
+    
+    if [ $i -eq 10 ]; then
+        echo "❌ PostgreSQL failed to become ready. Check Docker logs:"
+        docker-compose logs postgres
+        exit 1
+    fi
+done
 
 # Check if pgAdmin is running
 if docker-compose ps | grep -q "pgadmin.*Up"; then
