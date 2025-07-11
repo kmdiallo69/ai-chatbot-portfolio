@@ -16,7 +16,7 @@ const MessageList = () => {
     const fileInputRef = useRef(null);
     
     // Configuration
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend-1752247339.livelyplant-d44fb3c4.eastus.azurecontainerapps.io';
     const BUILD_TIME = process.env.BUILD_TIME || 'Unknown';
     
     // Auto-scroll to bottom when new messages are added
