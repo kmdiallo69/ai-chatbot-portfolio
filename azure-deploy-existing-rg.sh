@@ -2,7 +2,7 @@
 set -e
 
 # Configuration - Using existing resource group
-RESOURCE_GROUP="1-1b72ddc4-playground-sandbox"
+RESOURCE_GROUP="1-1b154f73-playground-sandbox"
 LOCATION="eastus"
 ACR_NAME="chatbotacr$(date +%s)"  # Add timestamp to make it unique
 BACKEND_APP_NAME="chatbot-backend-$(date +%s)"

@@ -5,11 +5,11 @@ echo "==============================="
 echo "Checking Deployment Status"
 echo "==============================="
 
-# Backend URL
-BACKEND_URL="https://chatbot-backend-1752247339.livelyplant-d44fb3c4.eastus.azurecontainerapps.io"
+# Backend URL (New Deployment)
+BACKEND_URL="https://chatbot-backend-1752261683.purplesmoke-82a64915.eastus.azurecontainerapps.io"
 
-# Frontend URL (New Working URL)
-FRONTEND_URL="https://green-desert-097a9c00f.1.azurestaticapps.net"
+# Frontend URL (New Deployment)
+FRONTEND_URL="https://lemon-plant-0d43ab50f.1.azurestaticapps.net"
 
 echo ""
 echo "1. Testing Backend Health..."
@@ -44,7 +44,7 @@ echo "4. Checking if deployment is complete..."
 echo "Please visit: $FRONTEND_URL"
 echo "Look for the build information (ℹ️ button) to verify the new deployment"
 echo ""
-echo "Expected version: 2025-01-11-v3"
+echo "Expected version: 2025-01-11-v4-new-deployment"
 echo "Expected API URL: $BACKEND_URL"
 echo ""
 echo "If the version doesn't match, wait a few more minutes for deployment to complete."

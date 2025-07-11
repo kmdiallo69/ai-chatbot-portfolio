@@ -17,7 +17,7 @@ const DebugPage = () => {
             
             <div style={{ background: '#e8f4f8', padding: '15px', borderRadius: '8px', marginBottom: '20px' }}>
                 <h2>Expected Values</h2>
-                <p><strong>Expected API URL:</strong> https://chatbot-backend-1752247339.livelyplant-d44fb3c4.eastus.azurecontainerapps.io</p>
+                <p><strong>Expected API URL:</strong> https://chatbot-backend-1752261683.purplesmoke-82a64915.eastus.azurecontainerapps.io</p>
                 <p><strong>Current API URL:</strong> {apiUrl}</p>
                 <p><strong>Status:</strong> {apiUrl.includes('azurecontainerapps.io') ? '✅ Correct' : '❌ Using fallback'}</p>
             </div>
