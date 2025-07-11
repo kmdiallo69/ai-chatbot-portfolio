@@ -15,6 +15,18 @@ const nextConfig = {
     NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
     BUILD_TIME: new Date().toISOString(),
   },
+  // Configure export path mapping
+  exportPathMap: async function (
+    defaultPathMap,
+    { dev, dir, outDir, distDir, buildId }
+  ) {
+    return {
+      '/': { page: '/' },
+    };
+  },
+  // Disable server-side features for static export
+  poweredByHeader: false,
+  compress: true,
 };
 
 export default nextConfig;
