@@ -1,5 +1,7 @@
 import styles from "./messageList.module.css";
 import React, { useState, useEffect, useRef } from "react";
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 
 const MessageList = () => {
     // State management
@@ -213,7 +215,7 @@ const MessageList = () => {
                     <h4>Build Information</h4>
                     <p><strong>API URL:</strong> {API_URL}</p>
                     <p><strong>Build Time:</strong> {BUILD_TIME}</p>
-                    <p><strong>Version:</strong> 2025-01-11-v4-new-deployment</p>
+                    <p><strong>Version:</strong> 2025-01-11-v5-markdown-support</p>
                     <p><strong>Deployment:</strong> Azure Static Web Apps</p>
                 </div>
             )}
@@ -251,7 +253,18 @@ const MessageList = () => {
                                         className={styles.image}
                                     />
                                 ) : (
-                                    <span className={styles.messageText}>{chat.message}</span>
+                                    <div className={styles.messageText}>
+                                        {chat.sender === "bot" ? (
+                                            <ReactMarkdown 
+                                                remarkPlugins={[remarkGfm]}
+                                                className={styles.markdownContent}
+                                            >
+                                                {chat.message}
+                                            </ReactMarkdown>
+                                        ) : (
+                                            <span>{chat.message}</span>
+                                        )}
+                                    </div>
                                 )}
                             </div>
                             <div className={styles.messageFooter}>
