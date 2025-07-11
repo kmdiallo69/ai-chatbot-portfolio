@@ -9,7 +9,7 @@ echo "==============================="
 BACKEND_URL="https://chatbot-backend-1752261683.purplesmoke-82a64915.eastus.azurecontainerapps.io"
 
 # Frontend URL (Working Deployment)
-FRONTEND_URL="https://green-desert-097a9c00f.1.azurestaticapps.net"
+FRONTEND_URL="https://proud-moss-066b9b810.1.azurestaticapps.net"
 
 echo ""
 echo "1. Testing Backend Health..."
