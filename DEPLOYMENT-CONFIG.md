@@ -10,7 +10,7 @@
 - **App Name**: `chatbot-backend`
 - **URL Pattern**: `https://chatbot-backend.{unique-suffix}.azurecontainerapps.io`
 - **Environment**: Azure Container Apps
-- **Current URL**: `https://chatbot-backend-1752247339.livelyplant-d44fb3c4.eastus.azurecontainerapps.io`
+- **Current URL**: `https://chatbot-backend-1752261683.purplesmoke-82a64915.eastus.azurecontainerapps.io`
 
 ### **Database URL (Dynamic)**
 - **App Name**: `chatbot-database`

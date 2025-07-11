@@ -5,8 +5,8 @@ echo "==============================="
 echo "Checking Deployment Status"
 echo "==============================="
 
-# Backend URL (From Full-Stack Deployment)
-BACKEND_URL="https://chatbot-backend-1752247339.livelyplant-d44fb3c4.eastus.azurecontainerapps.io"
+# Backend URL (Working Deployment)
+BACKEND_URL="https://chatbot-backend-1752261683.purplesmoke-82a64915.eastus.azurecontainerapps.io"
 
 # Frontend URL (Working Deployment)
 FRONTEND_URL="https://green-desert-097a9c00f.1.azurestaticapps.net"
