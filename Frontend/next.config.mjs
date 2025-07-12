@@ -12,7 +12,7 @@ const nextConfig = {
   },
   // Add environment variables
   env: {
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend-1752261683.purplesmoke-82a64915.eastus.azurecontainerapps.io',
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend.kindwater-a13bf119.westus.azurecontainerapps.io',
     BUILD_TIME: new Date().toISOString(),
   },
   // Disable server-side features for static hosting
