@@ -23,7 +23,7 @@ const MessageList = () => {
     const router = useRouter();
     
     // Configuration
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend-1752261683.purplesmoke-82a64915.eastus.azurecontainerapps.io';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend.kindwater-a13bf119.westus.azurecontainerapps.io';
     const BUILD_TIME = process.env.BUILD_TIME || 'Unknown';
     
     // Check authentication on component mount
