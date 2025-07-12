@@ -11,10 +11,10 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_RESOURCE_GROUP: "1-1b154f73-playground-sandbox"
-  AZURE_LOCATION: "eastus"
-  ACR_NAME: "chatbotacr1752261237"
-  CONTAINER_ENV_NAME: "chatbot-env"
+  AZURE_RESOURCE_GROUP: "1-410dbcf4-playground-sandbox"
+  AZURE_LOCATION: "westus"
+  ACR_NAME: "chatbotacr1752346001"
+  CONTAINER_ENV_NAME: "chatbot-env-1752346023"
   DATABASE_APP_NAME: "chatbot-database"
   BACKEND_APP_NAME: "chatbot-backend"
   FRONTEND_APP_NAME: "chatbot-frontend"
@@ -35,10 +35,7 @@ jobs:
       - name: Login to Azure
         uses: azure/login@v1
         with:
-          client-id: ${{ secrets.AZURE_CLIENT_ID }}
-          client-secret: ${{ secrets.AZURE_CLIENT_SECRET }}
-          subscription-id: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
-          tenant-id: ${{ secrets.AZURE_TENANT_ID }}
+          creds: ${{ secrets.AZURE_CREDENTIALS }}
 
       - name: Install jq for JSON parsing
         run: |
@@ -164,7 +161,7 @@ jobs:
       - name: Deploy Frontend to Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_PLANT_0D43AB50F }}
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_BLUE_GRASS_012BC941E }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "Frontend"
@@ -176,7 +173,7 @@ jobs:
       - name: Update Backend CORS Settings
         run: |
           # Get frontend URL
-          FRONTEND_URL="https://lemon-plant-0d43ab50f.1.azurestaticapps.net"
+          FRONTEND_URL="https://blue-grass-012bc941e.2.azurestaticapps.net"
           
           # Update backend CORS settings
           echo "Updating backend CORS settings for frontend: $FRONTEND_URL"
@@ -262,7 +259,7 @@ jobs:
           echo "🔍 Verifying Frontend Deployment..."
           echo "================================"
           
-          FRONTEND_URL="https://lemon-plant-0d43ab50f.1.azurestaticapps.net"
+          FRONTEND_URL="https://blue-grass-012bc941e.2.azurestaticapps.net"
           BACKEND_URL="${{ steps.get-backend-url.outputs.backend_url }}"
           
           # Wait for frontend to be ready
@@ -303,7 +300,7 @@ jobs:
         run: |
           echo "🎉 Deployment Complete!"
           echo "========================="
-          echo "🌐 Frontend URL: https://lemon-plant-0d43ab50f.1.azurestaticapps.net"
+          echo "🌐 Frontend URL: https://blue-grass-012bc941e.2.azurestaticapps.net"
           echo "⚙️ Backend URL: ${{ steps.get-backend-url.outputs.backend_url }}"
           echo "🗄️ Database URL: ${{ steps.get-database-url.outputs.database_url }}"
           echo "📊 Resource Group: ${{ env.AZURE_RESOURCE_GROUP }}"
@@ -312,7 +309,7 @@ jobs:
           echo "🔧 All components are now deployed and configured to communicate!"
           echo ""
           echo "📋 Quick Test Instructions:"
-          echo "1. Visit: https://lemon-plant-0d43ab50f.1.azurestaticapps.net"
+          echo "1. Visit: https://blue-grass-012bc941e.2.azurestaticapps.net"
           echo "2. Register a new user account"
           echo "3. Check email for verification link"
           echo "4. Login and test the chat functionality"
@@ -325,5 +322,5 @@ jobs:
       - name: Close Pull Request
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_PLANT_0D43AB50F }}
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_BLUE_GRASS_012BC941E }}
           action: "close" 
