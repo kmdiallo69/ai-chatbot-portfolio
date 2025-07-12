@@ -1,13 +1,6 @@
 name: Azure Full Stack Deployment
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    types: [opened, synchronize, reopened, closed]
-    branches:
-      - main
   workflow_dispatch:
 
 env:
