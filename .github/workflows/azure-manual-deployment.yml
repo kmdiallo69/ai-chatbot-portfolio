@@ -1,0 +1,35 @@
+name: Deploy Frontend to Azure Static Web App
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build_and_deploy_job:
+    runs-on: ubuntu-latest
+    name: Build and Deploy Job
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          submodules: true
+
+      - name: Build And Deploy
+        id: builddeploy
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_BLUE_GRASS_012BC941E }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: "upload"
+          app_location: "Frontend"
+          api_location: ""
+          output_location: ""
+        env:
+          NEXT_PUBLIC_API_URL: "https://chatbot-backend.kindwater-a13bf119.westus.azurecontainerapps.io"
+
+      - name: Display URLs
+        run: |
+          echo "🎉 Frontend Deployment Complete!"
+          echo "🌐 Frontend URL: https://blue-grass-012bc941e.2.azurestaticapps.net"
+          echo "⚙️ Backend URL: https://chatbot-backend.kindwater-a13bf119.westus.azurecontainerapps.io" 
