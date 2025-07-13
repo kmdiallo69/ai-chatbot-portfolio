@@ -125,4 +125,18 @@ jspm_packages/
 .tern-port
 
 # Docker
-.docker/ 
+.docker/
+
+# System files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Build artifacts
+Frontend/out/
+Frontend/.next/
+Frontend/build/ 
