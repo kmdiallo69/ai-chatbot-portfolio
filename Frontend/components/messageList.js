@@ -2,6 +2,8 @@ import styles from "./messageList.module.css";
 import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import { useAuth } from './AuthContext';
+import Cookies from 'js-cookie';
 
 const MessageList = () => {
     // State management
@@ -18,8 +20,11 @@ const MessageList = () => {
     const fileInputRef = useRef(null);
     
     // Configuration
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend-1752416081.whitebeach-62d10d97.southcentralus.azurecontainerapps.io';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend.kindmushroom-11a9e276.westus.azurecontainerapps.io';
     const BUILD_TIME = process.env.BUILD_TIME || 'Unknown';
+    
+    // Authentication
+    const { user, logout } = useAuth();
     
     // Auto-scroll to bottom when new messages are added
     useEffect(() => {
@@ -81,6 +86,7 @@ const MessageList = () => {
         
         try {
             let response;
+            const token = Cookies.get('access_token');
             
             if (currentImageFile) {
                 // For image requests, use FormData and /chat/image endpoint
@@ -90,6 +96,9 @@ const MessageList = () => {
                 
                 response = await fetch(`${API_URL}/chat/image`, {
                     method: "POST",
+                    headers: {
+                        "Authorization": `Bearer ${token}`,
+                    },
                     body: formData, 
                 });
             } else {
@@ -98,6 +107,7 @@ const MessageList = () => {
                     method: "POST",
                     headers: {
                         "Content-Type": "application/json",
+                        "Authorization": `Bearer ${token}`,
                     },
                     body: JSON.stringify({
                         message: userMessageText
@@ -193,6 +203,18 @@ const MessageList = () => {
             <div className={styles.headerContainer}>
                 <h1 className={styles.header}>AI Chatbot</h1>
                 <div className={styles.headerButtons}>
+                    {user && (
+                        <div className={styles.userInfo}>
+                            <span className={styles.username}>Welcome, {user.username}!</span>
+                            <button 
+                                onClick={logout}
+                                className={styles.logoutButton}
+                                title="Logout"
+                            >
+                                Logout
+                            </button>
+                        </div>
+                    )}
                     <button 
                         onClick={() => setShowBuildInfo(!showBuildInfo)}
                         className={styles.infoButton}
