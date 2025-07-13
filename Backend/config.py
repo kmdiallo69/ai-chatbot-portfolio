@@ -16,7 +16,7 @@ class Settings:
     DEBUG: bool = ENVIRONMENT == "development"
     
     # OpenAI
-    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "sk-proj-6oQUX207fGp0GVvnXIxLT3BlbkFJEUjS1Pwm3MVRSgxomGP5")
+    OPENAI_API_KEY: str = os.getenv("OPENAI_API_KEY", "your-openai-api-key-here")
     
     # Database
     DATABASE_URL: str = os.getenv("DATABASE_URL", "postgresql://chatbot_user:chatbot_password@localhost:5432/chatbot_db")
