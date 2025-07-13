@@ -1,13 +1,17 @@
-import os
 import logging
 from datetime import datetime
-from dotenv import load_dotenv
 from openai import OpenAI
-from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Request
+from fastapi import FastAPI, File, UploadFile, Form, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field, validator
 import base64
 from typing import Optional
+
+from config import settings
+from auth_endpoints import auth_router
+from auth import get_current_user
+from database import User, create_tables, health_check as db_health_check
+from middleware import RateLimitMiddleware
 
 # Configure logging
 logging.basicConfig(
@@ -16,35 +20,41 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
-load_dotenv()
-
-# Configuration
-OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
-CORS_ORIGINS = os.getenv("CORS_ORIGINS", "http://localhost:3000").split(",")
-MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-ALLOWED_FILE_TYPES = {"image/jpeg", "image/png", "image/gif", "image/webp"}
-
-if not OPENAI_API_KEY:
-    raise ValueError("OPENAI_API_KEY environment variable is required")
-
 # Initialize OpenAI client
-client = OpenAI(api_key=OPENAI_API_KEY)
+client = OpenAI(api_key=settings.OPENAI_API_KEY)
 
 # Initialize FastAPI app
 app = FastAPI(
-    title="AI Chatbot API",
-    description="An AI chatbot with text and image capabilities",
-    version="1.0.0"
+    title=settings.APP_NAME,
+    description=settings.APP_DESCRIPTION,
+    version=settings.APP_VERSION
 )
+
+# Add rate limiting middleware
+app.add_middleware(RateLimitMiddleware)
 
 # Add CORS middleware with proper configuration
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=CORS_ORIGINS,
+    allow_origins=settings.CORS_ORIGINS,
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
 )
+
+# Include authentication router
+app.include_router(auth_router)
+
+# Initialize database on startup
+@app.on_event("startup")
+async def startup_event():
+    """Initialize database tables on startup"""
+    try:
+        create_tables()
+        logger.info("Database tables initialized successfully")
+    except Exception as e:
+        logger.error(f"Failed to initialize database: {str(e)}")
+        raise
 
 # Pydantic models
 class ChatRequest(BaseModel):
@@ -69,16 +79,23 @@ class HealthResponse(BaseModel):
 @app.get("/health", response_model=HealthResponse)
 async def health_check():
     """Health check endpoint for monitoring"""
-    return HealthResponse(status="healthy", version="1.0.0")
+    try:
+        db_healthy = db_health_check()
+        if not db_healthy:
+            return HealthResponse(status="unhealthy", version="1.0.0")
+        return HealthResponse(status="healthy", version="1.0.0")
+    except Exception as e:
+        logger.error(f"Health check failed: {str(e)}")
+        return HealthResponse(status="unhealthy", version="1.0.0")
 
 # Main chat endpoint
 @app.post("/chat", response_model=ChatResponse)
-async def chat_with_ai(chat_request: ChatRequest):
+async def chat_with_ai(chat_request: ChatRequest, current_user: User = Depends(get_current_user)):
     """
     Endpoint to receive a text prompt and return AI response
     """
     try:
-        logger.info(f"Received chat request: {chat_request.message[:50]}...")
+        logger.info(f"Received chat request from user {current_user.username}: {chat_request.message[:50]}...")
         
         completion = client.chat.completions.create(
             model="gpt-4o-mini",
@@ -117,29 +134,30 @@ async def chat_with_ai(chat_request: ChatRequest):
 @app.post("/chat/image", response_model=ChatResponse)
 async def chat_with_image(
     prompt: str = Form(..., min_length=1, max_length=2000),
-    file: Optional[UploadFile] = File(None)
+    file: Optional[UploadFile] = File(None),
+    current_user: User = Depends(get_current_user)
 ):
     """
     Endpoint to process text with optional image upload
     """
     try:
-        logger.info(f"Received image chat request: {prompt[:50]}...")
+        logger.info(f"Received image chat request from user {current_user.username}: {prompt[:50]}...")
         
         # Validate file if provided
         if file:
             # Check file size
             file_content = await file.read()
-            if len(file_content) > MAX_FILE_SIZE:
+            if len(file_content) > settings.MAX_FILE_SIZE:
                 raise HTTPException(
                     status_code=413,
-                    detail=f"File size exceeds maximum allowed size of {MAX_FILE_SIZE/1024/1024:.1f}MB"
+                    detail=f"File size exceeds maximum allowed size of {settings.MAX_FILE_SIZE/1024/1024:.1f}MB"
                 )
             
             # Check file type
-            if file.content_type not in ALLOWED_FILE_TYPES:
+            if file.content_type not in settings.ALLOWED_FILE_TYPES:
                 raise HTTPException(
                     status_code=400,
-                    detail=f"File type {file.content_type} not allowed. Supported types: {', '.join(ALLOWED_FILE_TYPES)}"
+                    detail=f"File type {file.content_type} not allowed. Supported types: {', '.join(settings.ALLOWED_FILE_TYPES)}"
                 )
             
             # Encode image to base64
@@ -210,15 +228,16 @@ async def chat_with_image(
 
 # Legacy endpoint for backward compatibility
 @app.post("/", response_model=ChatResponse)
-async def legacy_chat(chat_request: ChatRequest):
+async def legacy_chat(chat_request: ChatRequest, current_user: User = Depends(get_current_user)):
     """Legacy endpoint for backward compatibility"""
-    return await chat_with_ai(chat_request)
+    return await chat_with_ai(chat_request, current_user)
 
 # Legacy upload endpoint for backward compatibility
 @app.post("/uploadfile/", response_model=ChatResponse)
 async def legacy_upload(
     prompt: str = Form(...),
-    file: Optional[UploadFile] = File(None)
+    file: Optional[UploadFile] = File(None),
+    current_user: User = Depends(get_current_user)
 ):
     """Legacy upload endpoint for backward compatibility"""
-    return await chat_with_image(prompt, file)
+    return await chat_with_image(prompt, file, current_user)

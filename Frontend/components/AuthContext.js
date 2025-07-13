@@ -25,8 +25,11 @@ export const AuthProvider = ({ children }) => {
 
     const checkAuthStatus = async () => {
         try {
+            console.log('API_URL:', API_URL); // Debug log
             const token = Cookies.get('access_token');
+            console.log('Token found:', !!token); // Debug log
             if (!token) {
+                console.log('No token, showing auth pages'); // Debug log
                 setLoading(false);
                 return;
             }

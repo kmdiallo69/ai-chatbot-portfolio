@@ -26,6 +26,35 @@
     align-items: center;
 }
 
+.userInfo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-right: 12px;
+}
+
+.username {
+    font-size: 14px;
+    color: #666;
+    font-weight: 500;
+}
+
+.logoutButton {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 6px 12px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    font-weight: 500;
+    transition: background-color 0.2s;
+}
+
+.logoutButton:hover {
+    background: #c82333;
+}
+
 .header {
     margin: 0;
     color: white;
