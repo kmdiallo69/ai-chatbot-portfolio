@@ -18,7 +18,7 @@ const MessageList = () => {
     const fileInputRef = useRef(null);
     
     // Configuration
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend-1752261683.purplesmoke-82a64915.eastus.azurecontainerapps.io';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend-1752416081.whitebeach-62d10d97.southcentralus.azurecontainerapps.io';
     const BUILD_TIME = process.env.BUILD_TIME || 'Unknown';
     
     // Auto-scroll to bottom when new messages are added
