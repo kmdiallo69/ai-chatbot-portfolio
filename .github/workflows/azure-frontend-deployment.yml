@@ -19,18 +19,18 @@ jobs:
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_LEMON_DUNE_047A3811E }}
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: "upload"
           app_location: "Frontend"
           api_location: ""
           output_location: "out"
         env:
-          NEXT_PUBLIC_API_URL: "https://chatbot-backend.kindmushroom-11a9e276.westus.azurecontainerapps.io"
+          NEXT_PUBLIC_API_URL: "https://chatbot-backend.calmhill-fb4ace7e.southcentralus.azurecontainerapps.io"
 
       - name: Display URLs
         run: |
           echo "🎉 Frontend Deployment Complete!"
-          echo "🌐 Frontend URL: https://lemon-dune-047a3811e.2.azurestaticapps.net"
-          echo "⚙️ Backend URL: https://chatbot-backend.kindmushroom-11a9e276.westus.azurecontainerapps.io"
+          echo "🌐 Frontend URL: https://happy-plant-0c7c7fa10.1.azurestaticapps.net"
+          echo "⚙️ Backend URL: https://chatbot-backend.calmhill-fb4ace7e.southcentralus.azurecontainerapps.io"
           echo "🔐 Authentication: Now working with user registration and email verification" 
