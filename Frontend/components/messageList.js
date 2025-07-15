@@ -20,7 +20,7 @@ const MessageList = () => {
     const fileInputRef = useRef(null);
     
     // Configuration
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend.kindmushroom-11a9e276.westus.azurecontainerapps.io';
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend.calmhill-fb4ace7e.southcentralus.azurecontainerapps.io';
     const BUILD_TIME = process.env.BUILD_TIME || 'Unknown';
     
     // Authentication

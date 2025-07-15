@@ -16,12 +16,7 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
 
-    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend.kindmushroom-11a9e276.westus.azurecontainerapps.io';
-
-    // Check if user is authenticated on mount
-    useEffect(() => {
-        checkAuthStatus();
-    }, [checkAuthStatus]);
+    const API_URL = process.env.NEXT_PUBLIC_API_URL || 'https://chatbot-backend.calmhill-fb4ace7e.southcentralus.azurecontainerapps.io';
 
     const checkAuthStatus = async () => {
         try {
@@ -57,6 +52,11 @@ export const AuthProvider = ({ children }) => {
             setLoading(false);
         }
     };
+
+    // Check if user is authenticated on mount
+    useEffect(() => {
+        checkAuthStatus();
+    }, []);
 
     const login = async (usernameOrEmail, password) => {
         try {
